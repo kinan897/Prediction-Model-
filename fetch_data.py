@@ -4,6 +4,7 @@ Writes data/matches.csv with one row per match: teams, score, possession, shots,
 corners, fouls, plus upcoming (scheduled) fixtures so predict.py can find a team's next match.
 
 Usage:  python fetch_data.py [--seasons 2019 2026] [--workers 8]
+        python fetch_data.py --seasons 2026 2026   # refresh only the current season; other seasons are kept
 Parsed results are cached per match day in data/cache/, so re-runs only fetch new/recent days.
 """
 import argparse
@@ -145,7 +146,14 @@ def main():
 
     df = pd.DataFrame(rows).drop_duplicates("event_id")
     df["date"] = pd.to_datetime(df["date"], utc=True)
-    df = df.sort_values("date").reset_index(drop=True)
+    # merge into the existing file: matches from seasons outside the requested range are kept as they are
+    existing_path = DATA / "matches.csv"
+    if existing_path.exists():
+        old = pd.read_csv(existing_path, dtype={"event_id": str, "home_id": str, "away_id": str})
+        old["date"] = pd.to_datetime(old["date"], utc=True)
+        keep = ~old["season"].between(args.seasons[0], args.seasons[1]) & ~old["event_id"].isin(df["event_id"])
+        df = pd.concat([old[keep], df], ignore_index=True)
+    df = df.sort_values(["date", "event_id"]).reset_index(drop=True)
     DATA.mkdir(exist_ok=True)
     df.to_csv(DATA / "matches.csv", index=False)
 
