@@ -1,28 +1,33 @@
 # ⚽ Football Match Outcome Predictor
 
-A machine-learning web app that predicts **win / draw / loss** probabilities for football matches in the
+A machine-learning website that predicts **win / draw / loss** probabilities for football matches in the
 Premier League, La Liga, Bundesliga, Serie A, Ligue 1 and the UEFA Champions League. The model is trained
 on **14,000+ matches since 2019**. Its features are each team's recent goals, shots, shots on target,
 possession, form, Elo rating and home advantage.
 
-![Web app screenshot](docs/screenshot.png)
+The website is fully static and hosted on Netlify. The trained Random Forest is exported to JSON and
+**runs in the visitor's browser**, so any head-to-head matchup can be predicted with no backend server.
+
+![Website screenshot](docs/screenshot.png)
 
 ## Features
 - **Next match:** pick any team to see its next fixture as a match card with team crests, win/draw/loss
   probabilities, recent form, a "tale of the tape" stat comparison and the last 5 results for both sides.
-- **Head to head:** any two teams, at either stadium or a neutral venue, in a league or Champions League game.
+- **Head to head:** any two teams, at either stadium or a neutral venue, in a league or Champions League game,
+  predicted live in the browser.
 - **Fixtures:** predictions for every scheduled match in the coming weeks, grouped by day and filterable by
   competition.
 - **Model performance:** test-set metrics compared with baselines, feature importance, confusion matrix,
   accuracy by competition and calibration.
-- **Custom design:** dark theme, Space Grotesk and Inter fonts, and a layout that works on phones.
+- **Custom design:** dark theme, works on phones, and plain HTML/CSS/JS with no frameworks or chart libraries.
 
 ## How it works
 
 ```
-ESPN public API ──► fetch_data.py ──► data/matches.csv ──► features.py ──► train.py ──► models/model.joblib
-                                                                                           │
-                                                          app.py (Streamlit)  ◄── predictor.py ──► predict.py (CLI)
+ESPN public API ─► fetch_data.py ─► data/matches.csv ─► features.py ─► train.py ─► models/model.joblib
+                                                                                        │
+                    site/ (Netlify)  ◄── site/data/*.json ◄── export_site.py ◄──────────┘
+                    └ js/model.js runs the exported trees in the browser
 ```
 
 1. **Data collection** (`fetch_data.py`): every match since 2019-20 with score, possession, shots, shots on
@@ -38,8 +43,11 @@ ESPN public API ──► fetch_data.py ──► data/matches.csv ──► fea
 3. **Model training** (`train.py`): a Random Forest and XGBoost tuned with `GridSearchCV` +
    `TimeSeriesSplit`, optimising log loss. The split is chronological and never shuffled. The model with the
    better cross-validation score is kept and refit on all labelled data.
-4. **Serving** (`app.py`, `predict.py`): a Streamlit web app and a command-line tool built on one shared
-   `predictor.py` module.
+4. **Export** (`export_site.py`): writes each team's current form, the upcoming fixtures with their
+   predictions, the evaluation report and the forest's 400 trees to `site/data/`.
+5. **Serving** (`site/`): a static website. `js/model.js` rebuilds the 58 features from two teams' form and
+   walks the trees exactly as scikit-learn does, including float32 inputs and missing-value routing.
+   `tests/check_parity.mjs` confirms it matches Python on every upcoming fixture (max difference < 1e-6).
 
 ## Results
 Trained on 2020-21 to 2024-25 (9,515 matches) and tested on 2025-26 plus 2026-27 to date (2,455 matches the
@@ -66,31 +74,36 @@ model never saw):
 python -m venv .venv
 .venv/Scripts/activate            # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-streamlit run app.py
+python -m http.server 8000 --directory site      # then open http://localhost:8000
 ```
 
-Refresh the data and retrain (optional):
+## Update the website with new results
 
 ```bash
-python fetch_data.py     # downloads new results and fixtures (~5 min first run, fast afterwards)
-python train.py          # tunes and trains both models (~5 min)
+python fetch_data.py --seasons 2026 2026   # refresh the current season (other seasons are kept)
+python export_site.py                      # rebuild site/data/*.json
+node tests/check_parity.mjs                # optional: browser model == Python model
+git add -A && git commit -m "Update data" && git push    # Netlify redeploys automatically
 ```
 
-Command-line predictions:
+Retraining (`python train.py`, about 5 minutes) is only needed occasionally. Run `export_site.py` after it.
 
-```bash
-python predict.py "Arsenal"
-python predict.py "Real Madrid" --opponent "Bayern" --venue away --ucl
-python predict.py --upcoming --days 7
-```
+## Deploy on Netlify
+`netlify.toml` already holds the settings: base directory `site`, no build command. Netlify only serves the
+pre-built files.
 
-## Deploy (free) on Streamlit Community Cloud
-1. Sign in at [share.streamlit.io](https://share.streamlit.io) with GitHub.
-2. Click **Create app**, choose this repository, branch `main` and main file `app.py`.
-3. In **Advanced settings**, choose Python 3.12 or newer, then deploy.
+1. In Netlify: **Add new site → Import an existing project → GitHub**, then pick this repository.
+2. Leave the build settings as Netlify reads them from `netlify.toml`, and click **Deploy**.
+3. Optionally, under **Domain management**, add a subdomain of your own domain (for example
+   `predictor.yourdomain.com`).
+
+## Other ways to use it
+- **Command line:** `python predict.py "Arsenal"`, `python predict.py "Real Madrid" --opponent "Bayern" --venue away --ucl`,
+  `python predict.py --upcoming --days 7`
+- **Streamlit dashboard (local):** `streamlit run app.py`
 
 ## Tech stack
-Python · pandas · NumPy · scikit-learn · XGBoost · Streamlit · Altair
+Python · pandas · NumPy · scikit-learn · XGBoost · JavaScript · HTML/CSS · Netlify
 
 ## Project structure
 | File | Purpose |
@@ -98,10 +111,13 @@ Python · pandas · NumPy · scikit-learn · XGBoost · Streamlit · Altair
 | `fetch_data.py` | Data collection from ESPN's public API |
 | `features.py` | Leakage-free feature engineering and Elo ratings |
 | `train.py` | Hyperparameter tuning, evaluation and model selection |
-| `predictor.py` | Prediction logic shared by the app and the CLI |
-| `app.py` | Streamlit web app |
-| `assets/style.css`, `.streamlit/config.toml` | Web app theme and styling |
+| `predictor.py` | Prediction logic shared by the exporter, the CLI and the Streamlit app |
+| `export_site.py` | Exports team form, fixtures, report and the Random Forest to `site/data/` |
+| `site/` | The static website (`index.html`, `css/style.css`, `js/app.js`, `js/model.js`) |
+| `tests/check_parity.mjs` | Checks the in-browser model against Python's predictions |
+| `netlify.toml` | Netlify deploy settings |
 | `predict.py` | Command-line interface |
+| `app.py`, `assets/`, `.streamlit/` | Optional local Streamlit dashboard |
 | `reports/metrics.json` | Full evaluation results |
 
 *Built for learning. Not betting advice.*

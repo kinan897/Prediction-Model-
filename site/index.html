@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Match Outcome Predictor</title>
+  <meta name="description" content="Machine-learning win / draw / loss predictions for the top five European leagues and the Champions League.">
+  <meta property="og:title" content="Match Outcome Predictor">
+  <meta property="og:description" content="A Random Forest trained on 14,000+ matches predicts football results from form, shots, possession and Elo.">
+  <meta property="og:image" content="og-image.png">
+  <meta name="theme-color" content="#0a0f1c">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://a.espncdn.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+<main class="wrap">
+
+  <section class="hero">
+    <span class="eyebrow"><span class="dot"></span>Machine learning · Football analytics</span>
+    <h1>Match Outcome <span class="grad">Predictor</span></h1>
+    <p class="lede">Win, draw and loss probabilities for Europe's top five leagues and the Champions League,
+      from a <span data-bind="model">Random Forest</span> trained on <span data-bind="matches">14,000+</span>
+      matches of goals, shots, possession and form.</p>
+    <div class="leagues" id="league-row"></div>
+    <div class="cta">
+      <a class="btn" href="https://github.com/kinan897/Prediction-Model-" target="_blank" rel="noopener">View source on GitHub ↗</a>
+    </div>
+  </section>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="stale" id="stale" hidden></div>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="t-next" aria-controls="next" data-tab="next">Next match</button>
+    <button class="tab" role="tab" id="t-h2h" aria-controls="h2h" data-tab="h2h">Head to head</button>
+    <button class="tab" role="tab" id="t-fixtures" aria-controls="fixtures" data-tab="fixtures">Fixtures</button>
+    <button class="tab" role="tab" id="t-performance" aria-controls="performance" data-tab="performance">Model performance</button>
+    <button class="tab" role="tab" id="t-how" aria-controls="how" data-tab="how">How it works</button>
+  </nav>
+
+  <section id="next" role="tabpanel" aria-labelledby="t-next">
+    <div class="controls"><div class="picker" id="next-picker"></div></div>
+    <div id="next-out"><p class="loading">Loading match data…</p></div>
+  </section>
+
+  <section id="h2h" role="tabpanel" aria-labelledby="t-h2h" hidden>
+    <div class="controls cols-2">
+      <div class="picker" id="home-picker"></div>
+      <div class="picker" id="away-picker"></div>
+      <div class="field"><span class="label">Venue</span>
+        <div class="toggle-group" id="venue">
+          <button type="button" data-value="home" aria-pressed="true">Home team's stadium</button>
+          <button type="button" data-value="neutral" aria-pressed="false">Neutral venue</button>
+        </div>
+      </div>
+      <div class="field"><span class="label">Competition</span>
+        <div class="toggle-group" id="competition">
+          <button type="button" data-value="league" aria-pressed="false">League</button>
+          <button type="button" data-value="ucl" aria-pressed="true">Champions League</button>
+        </div>
+      </div>
+    </div>
+    <div id="h2h-out"><p class="loading">Loading the model…</p></div>
+  </section>
+
+  <section id="fixtures" role="tabpanel" aria-labelledby="t-fixtures" hidden>
+    <div class="controls cols-2">
+      <div class="field"><span class="label">Competitions</span><div class="pills" id="comp-pills"></div></div>
+      <div class="field"><label for="days">Days ahead</label>
+        <div class="range-row"><input type="range" id="days" min="1" max="45" value="14"><output id="days-out" for="days">14 days</output></div>
+      </div>
+    </div>
+    <div id="fixtures-out"></div>
+  </section>
+
+  <section id="performance" role="tabpanel" aria-labelledby="t-performance" hidden>
+    <div id="perf-out"></div>
+  </section>
+
+  <section id="how" role="tabpanel" aria-labelledby="t-how" hidden>
+    <div id="how-out"></div>
+  </section>
+
+  <footer class="foot">
+    <span>Built with Python, scikit-learn and vanilla JavaScript · Data from ESPN</span>
+    <span><a href="https://github.com/kinan897/Prediction-Model-" target="_blank" rel="noopener">Source on GitHub</a> · For fun and learning, not betting advice</span>
+  </footer>
+</main>
+</body>
+</html>
