@@ -8,12 +8,14 @@ possession, form, Elo rating and home advantage.
 ![Web app screenshot](docs/screenshot.png)
 
 ## Features
-- **Next match:** pick any team and see its next fixture with win/draw/loss probabilities, recent form and
-  a side-by-side stat comparison.
-- **Custom matchup:** any two teams, at either stadium or a neutral venue, in a league or Champions League game.
-- **Upcoming fixtures:** predictions for every scheduled match in the next few weeks.
-- **Model performance:** test-set metrics compared with baselines, feature importance, confusion matrix and
-  calibration.
+- **Next match:** pick any team to see its next fixture as a match card with team crests, win/draw/loss
+  probabilities, recent form, a "tale of the tape" stat comparison and the last 5 results for both sides.
+- **Head to head:** any two teams, at either stadium or a neutral venue, in a league or Champions League game.
+- **Fixtures:** predictions for every scheduled match in the coming weeks, grouped by day and filterable by
+  competition.
+- **Model performance:** test-set metrics compared with baselines, feature importance, confusion matrix,
+  accuracy by competition and calibration.
+- **Custom design:** dark theme, Space Grotesk and Inter fonts, and a layout that works on phones.
 
 ## How it works
 
@@ -98,6 +100,7 @@ Python · pandas · NumPy · scikit-learn · XGBoost · Streamlit · Altair
 | `train.py` | Hyperparameter tuning, evaluation and model selection |
 | `predictor.py` | Prediction logic shared by the app and the CLI |
 | `app.py` | Streamlit web app |
+| `assets/style.css`, `.streamlit/config.toml` | Web app theme and styling |
 | `predict.py` | Command-line interface |
 | `reports/metrics.json` | Full evaluation results |
 

@@ -63,6 +63,7 @@ class Predictor:
             gf, ga = (r.home_goals, r.away_goals) if home else (r.away_goals, r.home_goals)
             rows.append({"date": r.date, "competition": r.competition,
                          "opponent": r.away_team if home else r.home_team,
+                         "opponent_id": r.away_id if home else r.home_id,
                          "venue": "N" if r.neutral else ("H" if home else "A"),
                          "score": f"{int(gf)}-{int(ga)}",
                          "result": "W" if gf > ga else "D" if gf == ga else "L"})
