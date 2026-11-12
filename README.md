@@ -77,16 +77,22 @@ pip install -r requirements.txt
 python -m http.server 8000 --directory site      # then open http://localhost:8000
 ```
 
-## Update the website with new results
+## Automatic updates
+A scheduled GitHub Action ([`.github/workflows/update-data.yml`](.github/workflows/update-data.yml)) runs
+**every 3 days** at 06:00 UTC, on the 1st, 4th, 7th and so on of each month. It downloads the latest results
+and fixtures, rebuilds `site/data/`, checks the browser model against Python, and pushes the update. Netlify
+redeploys on that push. You can also start it by hand under **Actions → Update match data → Run workflow**.
+
+The same steps by hand:
 
 ```bash
-python fetch_data.py --seasons 2026 2026   # refresh the current season (other seasons are kept)
+python fetch_data.py --current-season      # refresh the season in progress (other seasons are kept)
 python export_site.py                      # rebuild site/data/*.json
-node tests/check_parity.mjs                # optional: browser model == Python model
-git add -A && git commit -m "Update data" && git push    # Netlify redeploys automatically
+node tests/check_parity.mjs                # browser model == Python model
 ```
 
-Retraining (`python train.py`, about 5 minutes) is only needed occasionally. Run `export_site.py` after it.
+The update doesn't retrain the model. New results still update every team's form, Elo rating and fixtures.
+Retrain now and then with `python train.py` (about 5 minutes), then run `export_site.py`.
 
 ## Deploy on Netlify
 `netlify.toml` already holds the settings: base directory `site`, no build command. Netlify only serves the

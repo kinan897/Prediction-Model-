@@ -4,7 +4,7 @@ Writes data/matches.csv with one row per match: teams, score, possession, shots,
 corners, fouls, plus upcoming (scheduled) fixtures so predict.py can find a team's next match.
 
 Usage:  python fetch_data.py [--seasons 2019 2026] [--workers 8]
-        python fetch_data.py --seasons 2026 2026   # refresh only the current season; other seasons are kept
+        python fetch_data.py --current-season     # refresh only the season in progress; other seasons are kept
 Parsed results are cached per match day in data/cache/, so re-runs only fetch new/recent days.
 """
 import argparse
@@ -121,11 +121,21 @@ def fetch_day(league: str, day: str, today: str) -> list[dict]:
     return rows
 
 
+def current_season(now: datetime | None = None) -> int:
+    """ESPN labels a European season by its starting year; new seasons start in July/August."""
+    now = now or datetime.now(timezone.utc)
+    return now.year if now.month >= 7 else now.year - 1
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seasons", nargs=2, type=int, default=[2019, 2026], metavar=("FIRST", "LAST"))
+    ap.add_argument("--seasons", nargs=2, type=int, default=[2019, current_season()], metavar=("FIRST", "LAST"))
+    ap.add_argument("--current-season", action="store_true",
+                    help="refresh only the season in progress (used by the scheduled GitHub Action)")
     ap.add_argument("--workers", type=int, default=8)
     args = ap.parse_args()
+    if args.current_season:
+        args.seasons = [current_season()] * 2
 
     today = (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y%m%d")
     jobs = []

@@ -1,0 +1,66 @@
+# Keeps the website's data fresh: every 3 days it downloads the latest results and fixtures,
+# rebuilds site/data/*.json, checks the in-browser model still matches Python, and pushes the update.
+# Netlify sees the push and redeploys the site automatically. The model itself is not retrained here
+# (run train.py by hand now and then); new results still update every team's form, Elo and fixtures.
+name: Update match data
+
+on:
+  schedule:
+    - cron: "0 6 */3 * *"   # 06:00 UTC on every 3rd day of the month (1st, 4th, 7th, ...)
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the packages the update needs
+        # requirements.txt is used as a constraints file so versions match the ones the model was trained with
+        run: pip install -c requirements.txt scikit-learn pandas numpy joblib requests
+
+      - name: Restore the download cache
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: espn-cache-${{ github.run_id }}
+          restore-keys: espn-cache-
+
+      - name: Download the latest results and fixtures
+        run: python fetch_data.py --current-season
+
+      - name: Rebuild the website data
+        run: python export_site.py
+
+      - name: Check the browser model still matches Python
+        run: node tests/check_parity.mjs
+
+      - name: Commit and push if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/matches.csv site/data
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update match data ($(date -u +%Y-%m-%d))"
+            git push
+          fi
